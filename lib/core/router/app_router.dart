@@ -12,6 +12,7 @@ import '../../features/bookings/presentation/booking_detail_screen.dart';
 import '../../features/bookings/presentation/bookings_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/notifications/presentation/notification_center_screen.dart';
+import '../../features/auth/presentation/profile_screen.dart';
 import '../../features/properties/presentation/properties_screen.dart';
 import '../../features/properties/presentation/property_detail_screen.dart';
 import '../../features/properties/domain/hotel_model.dart';
@@ -26,16 +27,25 @@ class AppRoutes {
   static const properties = '/properties';
   static const propertyDetail = '/properties/:id';
   static const notifications = '/notifications';
+  static const profile = '/profile';
 }
 
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> shellNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'shell');
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  // Only react to authentication status changes so that updating user profile
+  // or other state does not re-instantiate GoRouter and destroy the navigation stack.
+  final authStatus = ref.watch(authProvider.select((s) => s.status));
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      final status = authState.status;
+      final status = authStatus;
       final isAuthRoute = state.matchedLocation == AppRoutes.login;
       final isSplash = state.matchedLocation == AppRoutes.splash;
 
@@ -61,13 +71,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: AppRoutes.splash,
+        parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const SplashScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,
+        parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const LoginScreen(),
       ),
       ShellRoute(
+        navigatorKey: shellNavigatorKey,
         builder: (context, state, child) => _MainShell(child: child),
         routes: [
           GoRoute(
@@ -109,6 +122,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const NotificationCenterScreen(),
           ),
         ],
+      ),
+      // Full-page standard route pushed on the root navigator
+      GoRoute(
+        path: AppRoutes.profile,
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => MaterialPage<void>(
+          key: state.pageKey,
+          name: 'profile',
+          child: const ProfileScreen(),
+        ),
       ),
     ],
   );

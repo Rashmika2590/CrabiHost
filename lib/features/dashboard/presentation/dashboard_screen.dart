@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
@@ -12,6 +13,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../bookings/domain/booking_model.dart';
+import '../../notifications/data/fcm_service.dart';
 import '../../properties/domain/hotel_model.dart';
 import '../domain/dashboard_summary.dart';
 
@@ -32,7 +34,7 @@ class DashboardScreen extends ConsumerWidget {
             top: -40.h,
             left: -30.w,
             right: -30.w,
-            height: 220.h,
+            height: 200.h,
             child: Container(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
@@ -59,96 +61,101 @@ class DashboardScreen extends ConsumerWidget {
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 6.h),
+                      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
                       child: Row(
                         children: [
                           Expanded(
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10.w,
-                                vertical: 6.h,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFF7518),
-                                    Color(0xFFFF8C3B),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () => context.push(AppRoutes.profile),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10.w,
+                                  vertical: 6.h,
                                 ),
-                                borderRadius: BorderRadius.circular(36.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFFF7518)
-                                        .withValues(alpha: 0.28),
-                                    blurRadius: 14.r,
-                                    offset: Offset(0, 5.h),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFFF7518),
+                                      Color(0xFFFF8C3B),
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
                                   ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 20.r,
-                                    backgroundColor: Colors.white,
-                                    child: Text(
-                                      authState.user?.initials ?? 'H',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        color: const Color(0xFFFF7518),
-                                        fontWeight: FontWeight.w800,
+                                  borderRadius: BorderRadius.circular(36.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF7518)
+                                          .withValues(alpha: 0.28),
+                                      blurRadius: 12.r,
+                                      offset: Offset(0, 4.h),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 19.r,
+                                      backgroundColor: Colors.white,
+                                      child: Text(
+                                        authState.user?.initials ?? 'H',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13.5.sp,
+                                          color: const Color(0xFFFF7518),
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(width: 10.w),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Good ${_greeting()}! 👋',
-                                          style: TextStyle(
-                                            fontSize: 10.5.sp,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.92),
-                                            fontWeight: FontWeight.w500,
+                                    SizedBox(width: 10.w),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Good ${_greeting()}! 👋',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 10.sp,
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.92),
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          _formatName(authState.user?.fullName),
-                                          style: TextStyle(
-                                            fontSize: 14.5.sp,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: -0.3,
+                                          Text(
+                                            authState.user?.displayFirstName ??
+                                                'Host',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14.sp,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.3,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsets.only(right: 6.w),
-                                    child: Icon(
-                                      Icons.arrow_forward_ios_rounded,
-                                      color:
-                                          Colors.white.withValues(alpha: 0.8),
-                                      size: 13.sp,
+                                    Padding(
+                                      padding: EdgeInsets.only(right: 6.w),
+                                      child: Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        color:
+                                            Colors.white.withValues(alpha: 0.8),
+                                        size: 13.sp,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                          SizedBox(width: 10.w),
+                          SizedBox(width: 8.w),
+                          // Notification Bell with dynamic unread counter badge
                           Container(
-                            height: 48.h,
-                            width: 48.w,
+                            height: 44.h,
+                            width: 44.w,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -156,24 +163,90 @@ class DashboardScreen extends ConsumerWidget {
                                 BoxShadow(
                                   color: const Color(0xFF1B2A4A)
                                       .withValues(alpha: 0.06),
-                                  blurRadius: 12.r,
-                                  offset: Offset(0, 4.h),
+                                  blurRadius: 10.r,
+                                  offset: Offset(0, 3.h),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              clipBehavior: Clip.none,
+                              children: [
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  icon: Icon(
+                                    Icons.notifications_outlined,
+                                    color: const Color(0xFF1B2A4A),
+                                    size: 21.sp,
+                                  ),
+                                  tooltip: 'Notifications',
+                                  onPressed: () =>
+                                      context.push(AppRoutes.notifications),
+                                ),
+                                ValueListenableBuilder<int>(
+                                  valueListenable:
+                                      FcmService.instance.unreadCountNotifier,
+                                  builder: (context, count, _) {
+                                    if (count == 0) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Positioned(
+                                      top: 4.h,
+                                      right: 4.w,
+                                      child: Container(
+                                        padding: EdgeInsets.all(
+                                            count > 9 ? 2.w : 4.w),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFFF4848),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: BoxConstraints(
+                                          minWidth: 16.w,
+                                          minHeight: 16.w,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            count > 9 ? '9+' : '$count',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 8.5.sp,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          // Profile Settings Button
+                          Container(
+                            height: 44.h,
+                            width: 44.w,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF1B2A4A)
+                                      .withValues(alpha: 0.06),
+                                  blurRadius: 10.r,
+                                  offset: Offset(0, 3.h),
                                 ),
                               ],
                             ),
                             child: IconButton(
+                              padding: EdgeInsets.zero,
                               icon: Icon(
-                                Icons.logout_rounded,
+                                Icons.person_outline_rounded,
                                 color: const Color(0xFF1B2A4A),
-                                size: 19.sp,
+                                size: 21.sp,
                               ),
-                              tooltip: 'Sign out',
-                              onPressed: () async {
-                                final confirm = await _confirmLogout(context);
-                                if (confirm == true) {
-                                  ref.read(authProvider.notifier).logout();
-                                }
-                              },
+                              tooltip: 'Host Profile',
+                              onPressed: () => context.push(AppRoutes.profile),
                             ),
                           ),
                         ],
@@ -182,10 +255,10 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ),
 
-                // Main Content Body
+                // Main Content Body with Optimized Tight Spacing
                 SliverPadding(
                   padding:
-                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
                   sliver: dashboardAsync.when(
                     loading: () => const SliverToBoxAdapter(
                       child: _DashboardSkeleton(),
@@ -198,20 +271,20 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                     data: (summary) => SliverList(
                       delegate: SliverChildListDelegate([
-                        SizedBox(height: 6.h),
-                        // 1. Overview Live Stats (Directly after Header)
-                        const _SectionTitle('Overview'),
-                        //SizedBox(height: 10.h),
-                        _Overview3DGrid(summary: summary),
-                        //SizedBox(height: 22.h),
+                        // 1. Overview Live Stats (Compact)
+                        SizedBox(height: 30.h),
 
-                        // 2. 3D Category Management Cards (Original Card Size)
+                        const _SectionTitle('Overview'),
+                        _Overview3DGrid(summary: summary),
+
+                        SizedBox(height: 30.h),
+
+                        // 2. 3D Category Management Cards (Compact & Elegant)
                         const _SectionTitle('Manage'),
-                        SizedBox(height: 10.h),
                         Row(
                           children: [
                             Expanded(
-                              child: _3DCategoryCard(
+                              child: _Category3DCard(
                                 imagePath: 'assets/images/3d/accommodation.jpg',
                                 title: 'Properties',
                                 subtitle:
@@ -219,9 +292,9 @@ class DashboardScreen extends ConsumerWidget {
                                 onTap: () => context.go(AppRoutes.properties),
                               ),
                             ),
-                            SizedBox(width: 12.w),
+                            SizedBox(width: 10.w),
                             Expanded(
-                              child: _3DCategoryCard(
+                              child: _Category3DCard(
                                 imagePath: 'assets/images/3d/bookings.jpg',
                                 title: 'Bookings',
                                 subtitle:
@@ -231,12 +304,12 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        SizedBox(height: 12.h),
+                        SizedBox(height: 10.h),
                         Center(
                           child: SizedBox(
-                            width: 165.w,
-                            height: 165.h,
-                            child: _3DCategoryCard(
+                            width: 155.w,
+                            height: 135.h,
+                            child: _Category3DCard(
                               imagePath: 'assets/images/3d/bundled.jpg',
                               title: 'Web Portal',
                               subtitle: 'Admin & Settings',
@@ -244,15 +317,15 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        SizedBox(height: 22.h),
+
+                        SizedBox(height: 12.h),
 
                         // 3. Today's Activity Section
                         if (summary.todayCheckIns.isNotEmpty ||
                             summary.todayCheckOuts.isNotEmpty) ...[
                           const _SectionTitle("Today's Activity"),
-                          SizedBox(height: 10.h),
                           _TodayActivityCard(summary: summary),
-                          SizedBox(height: 22.h),
+                          SizedBox(height: 12.h),
                         ],
 
                         // 4. Properties Preview Section
@@ -266,8 +339,8 @@ class DashboardScreen extends ConsumerWidget {
                                     context.go(AppRoutes.properties),
                                 child: Text(
                                   'See All',
-                                  style: TextStyle(
-                                    fontSize: 13.sp,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12.5.sp,
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -275,11 +348,10 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          SizedBox(height: 6.h),
                           ...summary.properties
                               .take(3)
                               .map((h) => _PropertySummaryCard(hotel: h)),
-                          SizedBox(height: 20.h),
+                          SizedBox(height: 12.h),
                         ],
 
                         // 5. Upcoming Bookings Section
@@ -292,8 +364,8 @@ class DashboardScreen extends ConsumerWidget {
                                 onPressed: () => context.go(AppRoutes.bookings),
                                 child: Text(
                                   'See All',
-                                  style: TextStyle(
-                                    fontSize: 13.sp,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12.5.sp,
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -301,13 +373,13 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          SizedBox(height: 6.h),
                           ...summary.upcomingBookings
                               .take(3)
                               .map((b) => _BookingPreviewCard(booking: b)),
                         ],
 
-                        SizedBox(height: 100.h),
+                        // Reduced bottom whitespace for clean floating bottom navbar fit
+                        SizedBox(height: 80.h),
                       ]),
                     ),
                   ),
@@ -327,16 +399,6 @@ class DashboardScreen extends ConsumerWidget {
     return 'Evening';
   }
 
-  String _formatName(String? raw) {
-    if (raw == null || raw.isEmpty) return 'Host';
-    if (raw.contains('@')) {
-      final parts = raw.split('@');
-      final name = parts[0];
-      return name[0].toUpperCase() + name.substring(1);
-    }
-    return raw;
-  }
-
   Future<void> _openWebPortal(BuildContext context) async {
     final Uri uri = Uri.parse(AppConfig.webPortalUrl);
     if (await canLaunchUrl(uri)) {
@@ -351,30 +413,40 @@ class DashboardScreen extends ConsumerWidget {
       }
     }
   }
+}
 
-  Future<bool?> _confirmLogout(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-        title: Text('Sign Out',
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700)),
-        content: Text('Are you sure you want to sign out?',
-            style: TextStyle(fontSize: 14.sp)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.r)),
+// Creative Section Title with Brand Gradient Pill Accent
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: 8.h, bottom: 6.h),
+      child: Row(
+        children: [
+          Container(
+            width: 3.5.w,
+            height: 14.h,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF7518), Color(0xFFFF944D)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(4.r),
             ),
-            child: const Text('Sign Out'),
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 15.5.sp,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1B2A4A),
+              letterSpacing: -0.3,
+            ),
           ),
         ],
       ),
@@ -382,32 +454,14 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 17.sp,
-        fontWeight: FontWeight.w800,
-        color: const Color(0xFF1B2A4A),
-        letterSpacing: -0.3,
-      ),
-    );
-  }
-}
-
-// 3D Category Card component (Original Size)
-class _3DCategoryCard extends StatelessWidget {
+// 3D Category Card component (Compact & Sleek)
+class _Category3DCard extends StatelessWidget {
   final String imagePath;
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
 
-  const _3DCategoryCard({
+  const _Category3DCard({
     required this.imagePath,
     required this.title,
     this.subtitle,
@@ -417,15 +471,15 @@ class _3DCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 165.h,
+      height: 135.h,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22.r),
+        borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B2A4A).withValues(alpha: 0.06),
-            blurRadius: 16.r,
-            offset: Offset(0, 6.h),
+            color: const Color(0xFF1B2A4A).withValues(alpha: 0.05),
+            blurRadius: 12.r,
+            offset: Offset(0, 4.h),
           ),
         ],
       ),
@@ -433,31 +487,31 @@ class _3DCategoryCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(22.r),
+          borderRadius: BorderRadius.circular(20.r),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(10.w, 12.h, 10.w, 12.h),
+            padding: EdgeInsets.fromLTRB(8.w, 8.h, 8.w, 8.h),
             child: Column(
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14.r),
+                    borderRadius: BorderRadius.circular(12.r),
                     child: Image.asset(
                       imagePath,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Icon(
                         Icons.home_work_rounded,
-                        size: 42.sp,
+                        size: 38.sp,
                         color: AppColors.primary,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 6.h),
+                SizedBox(height: 4.h),
                 Text(
                   title,
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: const Color(0xFF1B2A4A),
-                    fontSize: 13.sp,
+                    fontSize: 12.5.sp,
                     fontWeight: FontWeight.w700,
                     height: 1.15,
                   ),
@@ -466,12 +520,12 @@ class _3DCategoryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 1.h),
                   Text(
                     subtitle!,
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: AppColors.textSecondary,
-                      fontSize: 10.5.sp,
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
@@ -488,7 +542,7 @@ class _3DCategoryCard extends StatelessWidget {
   }
 }
 
-// Overview Stats 2x2 Grid
+// Overview Stats 2x2 Grid (Compact aspect ratio)
 class _Overview3DGrid extends StatelessWidget {
   final DashboardSummary summary;
   const _Overview3DGrid({required this.summary});
@@ -496,20 +550,21 @@ class _Overview3DGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.count(
+      padding: EdgeInsets.zero, // Default vertical & horizontal padding 0 කරයි
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 10.h,
-      crossAxisSpacing: 10.w,
-      childAspectRatio: 1.35,
+      mainAxisSpacing: 8.h,
+      crossAxisSpacing: 8.w,
+      childAspectRatio: 1.7,
       children: [
-        _3DStatCard(
+        _Stat3DCard(
           imagePath: 'assets/images/3d/bookings.jpg',
           label: 'Active Bookings',
           value: summary.totalActiveBookings.toString(),
           accentColor: AppColors.primary,
         ),
-        _3DStatCard(
+        _Stat3DCard(
           imagePath: 'assets/images/3d/wallet.jpg',
           label: 'Total Revenue',
           value: CurrencyFormatter.formatCompact(summary.totalRevenue),
@@ -534,13 +589,13 @@ class _Overview3DGrid extends StatelessWidget {
   }
 }
 
-class _3DStatCard extends StatelessWidget {
+class _Stat3DCard extends StatelessWidget {
   final String imagePath;
   final String label;
   final String value;
   final Color accentColor;
 
-  const _3DStatCard({
+  const _Stat3DCard({
     required this.imagePath,
     required this.label,
     required this.value,
@@ -552,29 +607,29 @@ class _3DStatCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B2A4A).withValues(alpha: 0.05),
-            blurRadius: 12.r,
-            offset: Offset(0, 4.h),
+            color: const Color(0xFF1B2A4A).withValues(alpha: 0.04),
+            blurRadius: 10.r,
+            offset: Offset(0, 3.h),
           ),
         ],
       ),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
       child: Row(
         children: [
           SizedBox(
-            width: 40.w,
-            height: 40.h,
+            width: 36.w,
+            height: 36.h,
             child: Image.asset(
               imagePath,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Icon(Icons.analytics_rounded,
-                  color: accentColor, size: 26.sp),
+                  color: accentColor, size: 24.sp),
             ),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 6.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,18 +639,18 @@ class _3DStatCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     value,
-                    style: TextStyle(
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w800,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF1B2A4A),
                     ),
                   ),
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 1.h),
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 10.sp,
+                  style: GoogleFonts.poppins(
+                    fontSize: 9.5.sp,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -631,27 +686,27 @@ class _IconStatCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B2A4A).withValues(alpha: 0.05),
-            blurRadius: 12.r,
-            offset: Offset(0, 4.h),
+            color: const Color(0xFF1B2A4A).withValues(alpha: 0.04),
+            blurRadius: 10.r,
+            offset: Offset(0, 3.h),
           ),
         ],
       ),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8.w),
+            padding: EdgeInsets.all(7.w),
             decoration: BoxDecoration(
               color: iconBg,
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Icon(icon, color: iconColor, size: 20.sp),
+            child: Icon(icon, color: iconColor, size: 18.sp),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 6.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,18 +716,18 @@ class _IconStatCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     value,
-                    style: TextStyle(
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w800,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF1B2A4A),
                     ),
                   ),
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 1.h),
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 10.sp,
+                  style: GoogleFonts.poppins(
+                    fontSize: 9.5.sp,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -697,16 +752,16 @@ class _TodayActivityCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B2A4A).withValues(alpha: 0.05),
-            blurRadius: 12.r,
-            offset: Offset(0, 4.h),
+            color: const Color(0xFF1B2A4A).withValues(alpha: 0.04),
+            blurRadius: 10.r,
+            offset: Offset(0, 3.h),
           ),
         ],
       ),
-      padding: EdgeInsets.all(14.w),
+      padding: EdgeInsets.all(12.w),
       child: Column(
         children: [
           if (summary.todayCheckIns.isNotEmpty) ...[
@@ -716,7 +771,7 @@ class _TodayActivityCard extends StatelessWidget {
               label: 'Check-ins Today',
               count: summary.todayCheckIns.length,
             ),
-            if (summary.todayCheckOuts.isNotEmpty) Divider(height: 18.h),
+            if (summary.todayCheckOuts.isNotEmpty) Divider(height: 14.h),
           ],
           if (summary.todayCheckOuts.isNotEmpty)
             _ActivityRow(
@@ -752,7 +807,7 @@ class _ActivityRow extends StatelessWidget {
           padding: EdgeInsets.all(7.w),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10.r),
+            borderRadius: BorderRadius.circular(9.r),
           ),
           child: Icon(icon, color: color, size: 16.sp),
         ),
@@ -760,7 +815,7 @@ class _ActivityRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF1B2A4A),
@@ -771,11 +826,11 @@ class _ActivityRow extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(16.r),
           ),
           child: Text(
             count.toString(),
-            style: TextStyle(
+            style: GoogleFonts.poppins(
                 fontSize: 11.5.sp, color: color, fontWeight: FontWeight.w700),
           ),
         ),
@@ -811,8 +866,8 @@ class _PropertySummaryCard extends StatelessWidget {
           child: hotel.primaryImage.isNotEmpty
               ? Image.network(
                   hotel.primaryImage,
-                  width: 48.w,
-                  height: 48.h,
+                  width: 44.w,
+                  height: 44.h,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _PlaceholderImage(),
                 )
@@ -820,7 +875,7 @@ class _PropertySummaryCard extends StatelessWidget {
         ),
         title: Text(
           hotel.name,
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             fontSize: 13.5.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF1B2A4A),
@@ -828,21 +883,22 @@ class _PropertySummaryCard extends StatelessWidget {
         ),
         subtitle: Text(
           hotel.displayLocation,
-          style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
+          style: GoogleFonts.poppins(
+              fontSize: 11.sp, color: AppColors.textSecondary),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: Container(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+          padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 3.h),
           decoration: BoxDecoration(
             color: hotel.enableByOwner
                 ? AppColors.successLight
                 : AppColors.errorLight,
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(16.r),
           ),
           child: Text(
             hotel.enableByOwner ? 'Active' : 'Disabled',
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 10.sp,
               color: hotel.enableByOwner ? AppColors.success : AppColors.error,
               fontWeight: FontWeight.w700,
@@ -858,8 +914,8 @@ class _PlaceholderImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 48.w,
-      height: 48.h,
+      width: 44.w,
+      height: 44.h,
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(10.r),
@@ -896,16 +952,16 @@ class _BookingPreviewCard extends StatelessWidget {
           backgroundColor: AppColors.upcomingLight,
           child: Text(
             booking.displayGuestName.substring(0, 1).toUpperCase(),
-            style: TextStyle(
-              fontSize: 13.sp,
+            style: GoogleFonts.poppins(
+              fontSize: 13.5.sp,
               color: AppColors.primary,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
         title: Text(
           booking.displayGuestName,
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             fontSize: 13.5.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF1B2A4A),
@@ -913,7 +969,8 @@ class _BookingPreviewCard extends StatelessWidget {
         ),
         subtitle: Text(
           'Check-in: ${DateFormatter.formatDate(booking.checkInDate)}',
-          style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
+          style: GoogleFonts.poppins(
+              fontSize: 11.sp, color: AppColors.textSecondary),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -924,17 +981,17 @@ class _BookingPreviewCard extends StatelessWidget {
                 booking.price,
                 currency: booking.displayCurrency,
               ),
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 13.sp,
                 color: AppColors.primary,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 2.h),
+            SizedBox(height: 1.h),
             Text(
               DateFormatter.relativeDate(booking.checkInDate),
-              style:
-                  TextStyle(fontSize: 9.5.sp, color: AppColors.textSecondary),
+              style: GoogleFonts.poppins(
+                  fontSize: 9.5.sp, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -953,8 +1010,8 @@ class _DashboardSkeleton extends StatelessWidget {
       children: List.generate(
         4,
         (i) => Container(
-          margin: EdgeInsets.only(bottom: 12.h),
-          height: 75.h,
+          margin: EdgeInsets.only(bottom: 10.h),
+          height: 70.h,
           decoration: BoxDecoration(
             color: AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(16.r),
@@ -978,22 +1035,22 @@ class _ErrorCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B2A4A).withValues(alpha: 0.08),
-            blurRadius: 16.r,
-            offset: Offset(0, 6.h),
+            color: const Color(0xFF1B2A4A).withValues(alpha: 0.06),
+            blurRadius: 14.r,
+            offset: Offset(0, 4.h),
           ),
         ],
       ),
-      padding: EdgeInsets.all(24.w),
+      padding: EdgeInsets.all(20.w),
       child: Column(
         children: [
           Icon(Icons.error_outline_rounded,
-              color: AppColors.error, size: 48.sp),
-          SizedBox(height: 12.h),
+              color: AppColors.error, size: 44.sp),
+          SizedBox(height: 10.h),
           Text(
             'Failed to load dashboard',
-            style: TextStyle(
-              fontSize: 16.sp,
+            style: GoogleFonts.poppins(
+              fontSize: 15.sp,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF1B2A4A),
             ),
@@ -1001,16 +1058,17 @@ class _ErrorCard extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             message,
-            style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
+            style: GoogleFonts.poppins(
+                fontSize: 11.5.sp, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 14.h),
           PrimaryGradientButton(
             text: 'Retry',
             icon: Icons.refresh_rounded,
             onPressed: onRetry,
-            width: 140.w,
-            height: 44.h,
+            width: 130.w,
+            height: 42.h,
           ),
         ],
       ),

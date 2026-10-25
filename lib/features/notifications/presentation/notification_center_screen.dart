@@ -1,90 +1,143 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/primary_gradient_button.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../data/fcm_service.dart';
+import 'providers/notifications_provider.dart';
 
-class NotificationCenterScreen extends StatefulWidget {
+class NotificationCenterScreen extends ConsumerStatefulWidget {
   const NotificationCenterScreen({super.key});
 
   @override
-  State<NotificationCenterScreen> createState() => _NotificationCenterScreenState();
+  ConsumerState<NotificationCenterScreen> createState() =>
+      _NotificationCenterScreenState();
 }
 
-class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
-  final _fcmService = FcmService.instance;
-
-  Future<void> _markAllAsRead() async {
-    await _fcmService.markAllRead();
-    setState(() {});
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All alerts marked as read')),
-      );
-    }
-  }
-
-  Future<void> _clearAll() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Clear Alerts', style: TextStyle(fontSize: 18.sp)),
-        content: Text('Are you sure you want to clear all notifications?', style: TextStyle(fontSize: 14.sp)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Clear All'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await _fcmService.clearAll();
-      setState(() {});
-    }
-  }
-
-  Future<void> _triggerTestAlert() async {
-    await _fcmService.showLocalNotification(
-      title: '🔔 New Booking Received!',
-      body: 'Guest Kasun Perera booked Deluxe Ocean Villa for 3 nights.',
-      type: 'new_booking',
-    );
-    setState(() {});
-  }
-
+class _NotificationCenterScreenState
+    extends ConsumerState<NotificationCenterScreen> {
   @override
   Widget build(BuildContext context) {
-    final notifications = _fcmService.notifications;
+    final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text('Activity & Alerts', style: TextStyle(fontSize: 18.sp)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: Text(
+          'Notifications',
+          style: GoogleFonts.poppins(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1B2A4A),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.add_alert_rounded, size: 22.sp),
+            icon: Icon(
+              Icons.add_alert_rounded,
+              size: 21.sp,
+              color: const Color(0xFF1B2A4A),
+            ),
             tooltip: 'Simulate Booking Alert',
-            onPressed: _triggerTestAlert,
+            onPressed: () =>
+                ref.read(notificationsProvider.notifier).triggerTestAlert(),
           ),
           PopupMenuButton<String>(
-            onSelected: (val) {
-              if (val == 'read') _markAllAsRead();
-              if (val == 'clear') _clearAll();
+            icon: Icon(
+              Icons.more_vert_rounded,
+              size: 21.sp,
+              color: const Color(0xFF1B2A4A),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            onSelected: (val) async {
+              if (val == 'read') {
+                await ref
+                    .read(notificationsProvider.notifier)
+                    .markAllAsRead();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'All notifications marked as read',
+                        style: GoogleFonts.poppins(fontSize: 12.5.sp),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } else if (val == 'clear') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    title: Text(
+                      'Clear History',
+                      style: GoogleFonts.poppins(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1B2A4A),
+                      ),
+                    ),
+                    content: Text(
+                      'Are you sure you want to clear all notification history?',
+                      style: GoogleFonts.poppins(fontSize: 13.5.sp),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                        ),
+                        child: Text(
+                          'Clear All',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await ref.read(notificationsProvider.notifier).clearAll();
+                }
+              }
             },
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'read',
                 child: Row(
                   children: [
-                    Icon(Icons.done_all_rounded, size: 18.sp),
-                    SizedBox(width: 8.w),
-                    Text('Mark all as read', style: TextStyle(fontSize: 13.sp)),
+                    Icon(Icons.done_all_rounded,
+                        size: 18.sp, color: AppColors.primary),
+                    SizedBox(width: 10.w),
+                    Text(
+                      'Mark all as read',
+                      style: GoogleFonts.poppins(fontSize: 13.sp),
+                    ),
                   ],
                 ),
               ),
@@ -92,9 +145,16 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                 value: 'clear',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_sweep_rounded, size: 18.sp, color: AppColors.error),
-                    SizedBox(width: 8.w),
-                    Text('Clear alert history', style: TextStyle(fontSize: 13.sp, color: AppColors.error)),
+                    Icon(Icons.delete_sweep_rounded,
+                        size: 18.sp, color: AppColors.error),
+                    SizedBox(width: 10.w),
+                    Text(
+                      'Clear alert history',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.sp,
+                        color: AppColors.error,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -102,129 +162,246 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           ),
         ],
       ),
-      body: notifications.isEmpty
-          ? Center(
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => ref.read(notificationsProvider.notifier).refresh(),
+        child: notificationsAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+          error: (err, _) => Center(
+            child: Padding(
+              padding: EdgeInsets.all(24.w),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(24.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+                  Icon(
+                    Icons.error_outline_rounded,
+                    color: AppColors.error,
+                    size: 48.sp,
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
+                    'Failed to load notifications',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1B2A4A),
                     ),
-                    child: Icon(
-                      Icons.notifications_none_rounded,
-                      size: 56.sp,
-                      color: AppColors.primary,
+                  ),
+                  SizedBox(height: 6.h),
+                  Text(
+                    err.toString(),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   SizedBox(height: 16.h),
-                  Text('No alerts yet', style: AppTextStyles.headlineSmall.copyWith(fontSize: 16.sp)),
-                  SizedBox(height: 8.h),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32.w),
-                    child: Text(
-                      'You will receive instant alerts whenever guests book, check in, or check out of your listings.',
-                      style: AppTextStyles.bodyMedium.copyWith(fontSize: 13.sp, color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
                   PrimaryGradientButton(
-                    text: 'Send Test Alert',
-                    icon: Icons.notifications_active_rounded,
-                    onPressed: _triggerTestAlert,
-                    width: 200.w,
-                    height: 48.h,
+                    text: 'Retry',
+                    icon: Icons.refresh_rounded,
+                    width: 130.w,
+                    height: 42.h,
+                    onPressed: () =>
+                        ref.read(notificationsProvider.notifier).refresh(),
                   ),
                 ],
               ),
-            )
-          : ListView.separated(
-              padding: EdgeInsets.all(16.w),
-              itemCount: notifications.length,
-              separatorBuilder: (_, __) => SizedBox(height: 8.h),
-              itemBuilder: (context, index) {
-                final item = notifications[index];
-                return Card(
-                  color: item.isRead ? AppColors.surface : AppColors.primary.withValues(alpha: 0.04),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16.r),
-                    side: BorderSide(
-                      color: item.isRead ? AppColors.divider : AppColors.primary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.all(14.w),
-                    leading: Container(
-                      padding: EdgeInsets.all(10.w),
-                      decoration: BoxDecoration(
-                        color: _badgeColor(item.type).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Icon(
-                        item.icon,
-                        color: _badgeColor(item.type),
-                        size: 22.sp,
-                      ),
-                    ),
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+          ),
+          data: (notifications) {
+            if (notifications.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: 120.h),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            style: AppTextStyles.labelLarge.copyWith(
-                              fontSize: 14.sp,
-                              fontWeight: item.isRead ? FontWeight.w500 : FontWeight.w700,
-                            ),
+                        Container(
+                          width: 80.w,
+                          height: 80.w,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.notifications_none_rounded,
+                            size: 42.sp,
+                            color: AppColors.primary,
                           ),
                         ),
-                        if (!item.isRead)
-                          Container(
-                            width: 8.w,
-                            height: 8.h,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
+                        SizedBox(height: 18.h),
+                        Text(
+                          'No notifications yet',
+                          style: GoogleFonts.poppins(
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1B2A4A),
                           ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 40.w),
+                          child: Text(
+                            'You will receive instant alerts whenever guests book, check in, or message you.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.5.sp,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(height: 24.h),
+                        PrimaryGradientButton(
+                          text: 'Simulate Test Alert',
+                          icon: Icons.notifications_active_rounded,
+                          width: 220.w,
+                          height: 46.h,
+                          onPressed: () => ref
+                              .read(notificationsProvider.notifier)
+                              .triggerTestAlert(),
+                        ),
                       ],
                     ),
-                    subtitle: Column(
+                  ),
+                ],
+              );
+            }
+
+            return ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+              itemCount: notifications.length,
+              separatorBuilder: (_, __) => SizedBox(height: 10.h),
+              itemBuilder: (context, index) {
+                final item = notifications[index];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(16.r),
+                  onTap: () {
+                    if (!item.isRead) {
+                      ref
+                          .read(notificationsProvider.notifier)
+                          .markAsRead(item.id);
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: item.isRead
+                          ? Colors.white
+                          : AppColors.primary.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(
+                        color: item.isRead
+                            ? const Color(0xFFE2E8F0)
+                            : AppColors.primary.withValues(alpha: 0.35),
+                        width: item.isRead ? 1 : 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1B2A4A)
+                              .withValues(alpha: item.isRead ? 0.03 : 0.06),
+                          blurRadius: 10.r,
+                          offset: Offset(0, 3.h),
+                        ),
+                      ],
+                    ),
+                    padding: EdgeInsets.all(14.w),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: 4.h),
-                        Text(
-                          item.body,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontSize: 12.sp,
-                            color: AppColors.textPrimary,
+                        Container(
+                          padding: EdgeInsets.all(10.w),
+                          decoration: BoxDecoration(
+                            color:
+                                _badgeColor(item.type).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Icon(
+                            item.icon,
+                            color: _badgeColor(item.type),
+                            size: 22.sp,
                           ),
                         ),
-                        SizedBox(height: 6.h),
-                        Text(
-                          DateFormatter.formatDateTime(item.timestamp),
-                          style: AppTextStyles.caption.copyWith(fontSize: 10.sp),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.title,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13.5.sp,
+                                        fontWeight: item.isRead
+                                            ? FontWeight.w600
+                                            : FontWeight.w700,
+                                        color: const Color(0xFF1B2A4A),
+                                      ),
+                                    ),
+                                  ),
+                                  if (!item.isRead)
+                                    Container(
+                                      width: 8.w,
+                                      height: 8.h,
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                item.body,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.sp,
+                                  color: AppColors.textSecondary,
+                                  height: 1.35,
+                                ),
+                              ),
+                              SizedBox(height: 6.h),
+                              Text(
+                                DateFormatter.relativeDate(item.timestamp),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10.5.sp,
+                                  color: AppColors.textSecondary
+                                      .withValues(alpha: 0.75),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 );
               },
-            ),
+            );
+          },
+        ),
+      ),
     );
   }
 
   Color _badgeColor(String type) {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'new_booking':
+      case 'booking':
         return AppColors.primary;
       case 'check_in':
         return AppColors.success;
       case 'check_out':
         return AppColors.warning;
+      case 'payment':
+        return const Color(0xFF6366F1);
       default:
         return AppColors.accentDark;
     }

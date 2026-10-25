@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../notifications/data/fcm_service.dart';
 import '../../data/auth_repository.dart';
 import '../../domain/user_model.dart';
 
@@ -54,6 +56,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       try {
         final user = await _repo.getProfile();
         state = AuthState(status: AuthStatus.authenticated, user: user);
+        FcmService.instance.syncDeviceToken();
       } catch (_) {
         state = const AuthState(status: AuthStatus.unauthenticated);
       }
@@ -62,12 +65,53 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> refreshProfile() async {
+    try {
+      final user = await _repo.getProfile();
+      state = state.copyWith(user: user);
+    } catch (_) {}
+  }
+
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _repo.login(email: email, password: password);
       final user = await _repo.getProfile();
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      FcmService.instance.syncDeviceToken(force: true);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        isLoading: false,
+        error: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  /// Login with Google Sign-In
+  Future<bool> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _repo.loginWithGoogle();
+      try {
+        final user = await _repo.getProfile();
+        state = AuthState(status: AuthStatus.authenticated, user: user);
+      } catch (_) {
+        final fbUser = FirebaseAuth.instance.currentUser;
+        final nameParts = fbUser?.displayName?.split(' ') ?? ['Google', 'User'];
+        final userModel = UserModel(
+          uid: fbUser?.uid ?? 'google_user',
+          email: fbUser?.email ?? '',
+          firstName: nameParts.first,
+          lastName: nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '',
+          phone: fbUser?.phoneNumber ?? '',
+          role: 'host',
+        );
+        state = AuthState(status: AuthStatus.authenticated, user: userModel);
+      }
+      FcmService.instance.syncDeviceToken(force: true);
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -104,7 +148,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    await _repo.logout();
+    state = state.copyWith(isLoading: true);
+    try {
+      await FcmService.instance.onLogout();
+    } catch (_) {}
+    try {
+      await _repo.logout();
+    } catch (_) {}
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
